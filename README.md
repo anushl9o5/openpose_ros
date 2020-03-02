@@ -46,3 +46,10 @@ Tested on:
 source catkin_workspace/devel/setup.bash
 roslaunch openpose_ros openpose_ros.launch
 ```
+
+##TODO
+
+1. Integrate camera_info subscriber.
+2. Make changes to detect only one human in frame.
+3. Organize visualization code.
+4. Publish 3D points for Pybullet.

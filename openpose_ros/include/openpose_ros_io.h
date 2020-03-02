@@ -48,6 +48,7 @@ namespace openpose_ros {
             image_transport::ImageTransport it_;
             image_transport::Subscriber image_sub_;
             image_transport::Subscriber depth_sub_;
+			ros::Subscriber info_sub;
 
             cv_bridge::CvImagePtr cv_img_ptr_;
             cv_bridge::CvImagePtr cv_depth_ptr_;
@@ -73,6 +74,8 @@ namespace openpose_ros {
 
             int video_fps_;
 
+			float fx, fy, cx, cy; // Camera Params
+
         public:
             OpenPoseROSIO(OpenPose &openPose);
 
@@ -83,6 +86,8 @@ namespace openpose_ros {
             void convertImage(const sensor_msgs::ImageConstPtr& msg);
 
             void convertDepth(const sensor_msgs::ImageConstPtr& msg);
+
+            void get_CamInfo(const sensor_msgs::CameraInfo& msg);
 
             std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> createDatum();
 

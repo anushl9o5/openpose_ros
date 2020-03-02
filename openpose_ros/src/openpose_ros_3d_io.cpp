@@ -10,12 +10,14 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
     // Subscribe to input video feed and publish human lists as output
     std::string image_topic;
     std::string depth_topic;
+    std::string info_topic;
     std::string output_topic;
     std::string output_topic3D;
     std::string input_image_transport_type;
 
     nh_.param("image_topic", image_topic, std::string("/camera/image_raw"));
     nh_.param("depth_topic", depth_topic, std::string("/camera/depth/image_raw"));
+    nh_.param("info_topic", info_topic, std::string("/camera/depth/camera_info"));
     nh_.param("input_image_transport_type", input_image_transport_type, std::string("raw"));
     nh_.param("output_topic", output_topic, std::string("/openpose_ros/human_list"));
     nh_.param("output_topic3D", output_topic3D, std::string("/openpose_ros/human_list3D"));
@@ -29,6 +31,7 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 
     image_sub_ = it_.subscribe(image_topic, 1, &OpenPoseROSIO::processImage, this, image_transport::TransportHints(input_image_transport_type));
     depth_sub_ = it_.subscribe(depth_topic, 1, &OpenPoseROSIO::convertDepth, this, image_transport::TransportHints(input_image_transport_type));
+	info_sub = nh_.subscribe(info_topic, 1, &OpenPoseROSIO::get_CamInfo, this);
 
     openpose_human_list_pub_ = nh_.advertise<openpose_ros_msgs::OpenPoseHumanList>(output_topic, 10);
     openpose_human_list_pub_3D_ = nh_.advertise<openpose_ros_msgs::OpenPoseHumanList3D>(output_topic3D, 10);
@@ -42,7 +45,13 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 	VIS_body = true;
 	VIS_face = false;
 	VIS_right = false;
-	VIS_left = true;	
+	VIS_left = true;
+
+	//Default params is according to RS-D415
+	fx = 608.007;
+	fy = 608.007;	
+	cx = 309.006;
+	cy = 251.755;
 
     openpose_ = &openPose;
 
@@ -142,6 +151,15 @@ void OpenPoseROSIO::convertDepth(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 }
+
+void OpenPoseROSIO::get_CamInfo(const sensor_msgs::CameraInfo& msg)
+{
+	fx = msg.K[0];
+	fy = msg.K[4];
+	cx = msg.K[2];
+	cy = msg.K[5];
+}
+
 
 std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> OpenPoseROSIO::createDatum()
 {
@@ -297,10 +315,9 @@ bool OpenPoseROSIO::PointISValid(const openpose_ros_msgs::PointWithProb3D& bodyp
 
 geometry_msgs::Point OpenPoseROSIO::AddPoint(const openpose_ros_msgs::PointWithProb3D bodypart)
 {
-
   geometry_msgs::Point p;
-  p.x = (bodypart.x - 309.006) * (bodypart.z / 608006.0);
-  p.y = (bodypart.y - 251.755) * (bodypart.z / 608006.0);
+  p.x = (bodypart.x - cx) * (bodypart.z / (fx*1000.0));
+  p.y = (bodypart.y - cy) * (bodypart.z / (fy*1000.0));
   p.z = bodypart.z/1000.0;
    
   return p;
@@ -488,8 +505,8 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 							{
 								if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(0)))
 								{
-									skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(0)));
-									skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(0)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys)));
 								}
 							}	
 							/*else
@@ -508,6 +525,7 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		
 		marker_pub.publish(marker);
 		skeleton_pub.publish(skeleton);
+		skeleton_pub.publish(hand_skeleton);
 
 	}
 }
@@ -544,10 +562,10 @@ openpose_ros_msgs::PointWithProb3D OpenPoseROSIO::get3D(float x_pixel, float y_p
         bodypart_depth.z = pt_z;
 		bodypart_depth.prob = prob;
 
-        std::cerr << " real world coordinates (x,y,z): " << std::endl;
+        /*std::cerr << " real world coordinates (x,y,z): " << std::endl;
         std::cerr << "( " << bodypart_depth.x << ", " 
            	          << bodypart_depth.y << ", "
-                          << bodypart_depth.z << ")" << std::endl;	
+                          << bodypart_depth.z << ")" << std::endl;	*/
 	}
 
 	return bodypart_depth;
