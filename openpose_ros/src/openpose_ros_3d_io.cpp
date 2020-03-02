@@ -10,14 +10,12 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
     // Subscribe to input video feed and publish human lists as output
     std::string image_topic;
     std::string depth_topic;
-    std::string pointcloud_topic;
     std::string output_topic;
     std::string output_topic3D;
     std::string input_image_transport_type;
 
     nh_.param("image_topic", image_topic, std::string("/camera/image_raw"));
     nh_.param("depth_topic", depth_topic, std::string("/camera/depth/image_raw"));
-    nh_.param("pointcloud_topic", pointcloud_topic, std::string("/camera/pointcloud/cloud_registered"));
     nh_.param("input_image_transport_type", input_image_transport_type, std::string("raw"));
     nh_.param("output_topic", output_topic, std::string("/openpose_ros/human_list"));
     nh_.param("output_topic3D", output_topic3D, std::string("/openpose_ros/human_list3D"));
@@ -31,7 +29,6 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 
     image_sub_ = it_.subscribe(image_topic, 1, &OpenPoseROSIO::processImage, this, image_transport::TransportHints(input_image_transport_type));
     depth_sub_ = it_.subscribe(depth_topic, 1, &OpenPoseROSIO::convertDepth, this, image_transport::TransportHints(input_image_transport_type));
-    pointcloud_sub_ = nh_.subscribe(pointcloud_topic, 1, &OpenPoseROSIO::processCloud, this);
 
     openpose_human_list_pub_ = nh_.advertise<openpose_ros_msgs::OpenPoseHumanList>(output_topic, 10);
     openpose_human_list_pub_3D_ = nh_.advertise<openpose_ros_msgs::OpenPoseHumanList3D>(output_topic3D, 10);
@@ -41,14 +38,6 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 
     cv_img_ptr_ = nullptr;
     cv_depth_ptr_ = nullptr;
-	cloud_ptr_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-
-	pcl_max.x = 0;
-	pcl_max.y = 0;
-	pcl_max.z = 0; 
-	pcl_min.x = 0;
-	pcl_min.y = 0;
-	pcl_min.z = 0; 
 
 	VIS_body = true;
 	VIS_face = false;
@@ -153,22 +142,6 @@ void OpenPoseROSIO::convertDepth(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 }
-
-void OpenPoseROSIO::processCloud(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
-{
-  	pcl::fromROSMsg (*cloud_msg, *cloud_ptr_);
-	// std::cerr<<"x "<<cloud_ptr_->points.at((0, 0)).x<<" y "<<cloud_ptr_->points.at((0, 0)).y<<" z "<<cloud_ptr_->points.at((0, 0)).z;
-	if(cloud_ptr_->size() == 0)
-	{
-        ROS_ERROR("PointCloud data not loaded !!!");
-		return;
-	}
-	else
-	{
-   		pcl::getMinMax3D<pcl::PointXYZ>(*cloud_ptr_, pcl_min, pcl_max);
-	}
-}
-
 
 std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> OpenPoseROSIO::createDatum()
 {
@@ -326,9 +299,9 @@ geometry_msgs::Point OpenPoseROSIO::AddPoint(const openpose_ros_msgs::PointWithP
 {
 
   geometry_msgs::Point p;
-  p.x = (bodypart.x - 332.259) * (bodypart.z / 340.550);
-  p.y = (bodypart.y - 182.625) * (bodypart.z / 340.550);
-  p.z = bodypart.z;
+  p.x = (bodypart.x - 309.006) * (bodypart.z / 608006.0);
+  p.y = (bodypart.y - 251.755) * (bodypart.z / 608006.0);
+  p.z = bodypart.z/1000.0;
    
   return p;
 }
@@ -340,7 +313,7 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		visualization_msgs::Marker marker;
 
 		// Set boyjoints markers
-		marker.header.frame_id = "/zed_left_camera_optical_frame";
+		marker.header.frame_id = "/camera_color_optical_frame";
 		marker.id = human;
 		marker.ns = "joints";
 		marker.header.stamp = ros::Time();
@@ -359,10 +332,10 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		// Set marker duration in 150ms
 		marker.lifetime = ros::Duration(0);
 		
-		visualization_msgs::Marker skeleton;
+		visualization_msgs::Marker skeleton, hand_skeleton;
 
 		skeleton.id  = human;
-		skeleton.header.frame_id = "/zed_left_camera_optical_frame";
+		skeleton.header.frame_id = "/camera_color_optical_frame";//zed_left_camera_optical_frame
 		skeleton.ns = "skeleton";
 		skeleton.header.stamp = ros::Time();
 		// Skeleton will be lines
@@ -375,6 +348,22 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		skeleton.color.r = 0.0;
 		skeleton.color.g = 0.0;
 		skeleton.color.b = 1.0;
+
+		hand_skeleton.id  = human;
+		hand_skeleton.header.frame_id = "/camera_color_optical_frame";//zed_left_camera_optical_frame
+		hand_skeleton.ns = "hand_skeleton";
+		hand_skeleton.header.stamp = ros::Time();
+		// Skeleton will be lines
+		hand_skeleton.type = visualization_msgs::Marker::LINE_LIST;
+		hand_skeleton.scale.x = 0.03;
+		hand_skeleton.scale.y = 0.03;
+		hand_skeleton.scale.z = 0.03;
+		// Skeleton is blue
+		hand_skeleton.color.a = 1.0;
+		hand_skeleton.color.r = 0.0;
+		hand_skeleton.color.g = 1.0;
+		hand_skeleton.color.b = 0.0;
+
 
 		// Set skeleton lifetime
 		skeleton.lifetime = ros::Duration(0);
@@ -468,8 +457,8 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 							{
 								if(PointISValid(humans.at(human).right_hand_key_points_with_prob.at(0)))
 								{
-									skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(0)));
-									skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(0)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys)));
 								}
 							}	
 							/*else
@@ -535,7 +524,7 @@ double OpenPoseROSIO::Average(std::vector<double> v)
 	return total/size;
 }
 
-openpose_ros_msgs::PointWithProb3D OpenPoseROSIO::get3D_depth(float x_pixel, float y_pixel, float prob)
+openpose_ros_msgs::PointWithProb3D OpenPoseROSIO::get3D(float x_pixel, float y_pixel, float prob)
 {
     openpose_ros_msgs::PointWithProb3D bodypart_depth;
     auto pt_z = cv_depth_ptr_->image.at<float>(cv::Point(x_pixel, y_pixel));
@@ -608,7 +597,7 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
                 }
 				else
 				{
-					body_point_with_prob = get3D_depth(poseKeypoints[{person, bodyPart, 0}], poseKeypoints[{person, bodyPart, 1}], poseKeypoints[{person, bodyPart, 2}]);
+					body_point_with_prob = get3D(poseKeypoints[{person, bodyPart, 0}], poseKeypoints[{person, bodyPart, 1}], poseKeypoints[{person, bodyPart, 2}]);
                     num_body_key_points_with_non_zero_prob++;
 
                     if(body_min_x == -1 || body_point_with_prob.x < body_min_x)
@@ -657,7 +646,7 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 					}
 					else
 					{ 
-		                face_point_with_prob = get3D_depth(faceKeypoints[{person, facePart, 0}], faceKeypoints[{person, facePart, 1}], faceKeypoints[{person, facePart, 2}]);
+		                face_point_with_prob = get3D(faceKeypoints[{person, facePart, 0}], faceKeypoints[{person, facePart, 1}], faceKeypoints[{person, facePart, 2}]);
 		                num_face_key_points_with_non_zero_prob++;
 		                human.face_key_points_with_prob.at(facePart) = face_point_with_prob;
 					}
@@ -693,7 +682,7 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 
 					else
 					{ 
-						right_hand_point_with_prob = get3D_depth(rightHandKeypoints[{person, handPart, 0}], rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
+						right_hand_point_with_prob = get3D(rightHandKeypoints[{person, handPart, 0}], rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
 		                num_right_hand_key_points_with_non_zero_prob++;
 						human.right_hand_key_points_with_prob.at(handPart) = right_hand_point_with_prob;
 					}
@@ -715,7 +704,7 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 
 					else
 					{
-						left_hand_point_with_prob = get3D_depth(leftHandKeypoints[{person, handPart, 0}], leftHandKeypoints[{person, handPart, 1}], leftHandKeypoints[{person, handPart, 2}]);
+						left_hand_point_with_prob = get3D(leftHandKeypoints[{person, handPart, 0}], leftHandKeypoints[{person, handPart, 1}], leftHandKeypoints[{person, handPart, 2}]);
 		                num_left_hand_key_points_with_non_zero_prob++;
 		                human.left_hand_key_points_with_prob.at(handPart) = left_hand_point_with_prob;
 					}
@@ -738,7 +727,7 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 
 void OpenPoseROSIO::publish(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
 {
-    if (datumsPtr != nullptr && !datumsPtr->empty() && cloud_ptr_->size() > 0)
+    if (datumsPtr != nullptr && !datumsPtr->empty())
     {
         const auto& poseKeypoints = datumsPtr->at(0)->poseKeypoints;
         const auto& faceKeypoints = datumsPtr->at(0)->faceKeypoints;

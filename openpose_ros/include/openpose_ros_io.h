@@ -48,15 +48,11 @@ namespace openpose_ros {
             image_transport::ImageTransport it_;
             image_transport::Subscriber image_sub_;
             image_transport::Subscriber depth_sub_;
-			ros::Subscriber pointcloud_sub_;
 
             cv_bridge::CvImagePtr cv_img_ptr_;
             cv_bridge::CvImagePtr cv_depth_ptr_;
-			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_;
             std_msgs::Header image_header_;
             std_msgs::Header depth_header_;
-     		pcl::PointXYZ pcl_min;
-     		pcl::PointXYZ pcl_max;
 
             OpenPose* openpose_;
 
@@ -88,8 +84,6 @@ namespace openpose_ros {
 
             void convertDepth(const sensor_msgs::ImageConstPtr& msg);
 
-			void processCloud(const sensor_msgs::PointCloud2ConstPtr& msg);
-
             std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> createDatum();
 
             bool display(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr);
@@ -112,9 +106,7 @@ namespace openpose_ros {
 
 			bool PointISValid(const openpose_ros_msgs::PointWithProb3D& bodypart);
 
-			openpose_ros_msgs::PointWithProb3D get3D_cloud(float, float, float);
-
-			openpose_ros_msgs::PointWithProb3D get3D_depth(float, float, float);
+			openpose_ros_msgs::PointWithProb3D get3D(float, float, float);
 
 			double Average(std::vector<double> v);
 
