@@ -49,7 +49,7 @@ roslaunch openpose_ros openpose_ros.launch
 
 # 3D
 
-![](git_images/Screenshot from 2020-03-03 12-25-18.png)
+![](git_images/img1.png)
 
 ## TODO
 
