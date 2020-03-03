@@ -1,0 +1,25 @@
+<launch>
+
+  <!-- Start Realsense ros -->
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+	<arg name="enable_infra1"				 value="False"/>
+	<arg name="enable_infra2"				 value="False"/>
+  </include>
+
+  <!-- Start openpose_ros -->
+  <node pkg="openpose_ros" type="openpose_ros_node" name="openpose_ros_node" output="screen"> <!-- launch-prefix="valgrind" -->
+    <param name="image_topic"                value="/camera/color/image_rect_color" />
+    <param name="depth_topic"                value="/camera/aligned_depth_to_color/image_raw" />
+    <param name="pointcloud_topic"           value="/zed/zed_node/point_cloud/cloud_registered" />
+    <param name="input_image_transport_type" value="raw" />
+    <param name="output_topic"               value="/openpose_ros/human_list" />
+    <param name="display_output"             value="true" />
+    <param name="print_keypoints"            value="false" />
+    <param name="save_original_video"        value="false" />
+    <param name="save_openpose_video"        value="false" />
+    <param name="original_video_file_name"   value="original_video_output.avi" />
+    <param name="openpose_video_file_name"   value="openpose_video_output.avi" />
+    <param name="video_fps"                  value="20" />
+  </node>
+
+</launch>

@@ -325,7 +325,7 @@ geometry_msgs::Point OpenPoseROSIO::AddPoint(const openpose_ros_msgs::PointWithP
 
 void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans)
 {
-	for(auto human = 0 ; human < humans.size() ; human++)
+	for(auto human = 0 ; human < 1/*humans.size()*/ ; human++)
 	{
 		visualization_msgs::Marker marker;
 
@@ -736,7 +736,11 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
         human_list_msg.human_list = human_list;
 
         openpose_human_list_pub_3D_.publish(human_list_msg);
-		visualize(human_list);
+		
+		if(human_list.size() > 0)
+		{
+			visualize(human_list);
+		}
 
     }
     else
