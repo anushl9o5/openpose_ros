@@ -17,7 +17,7 @@ Tested on:
    ```bash
    git clone https://github.com/CMU-Perceptual-Computing-Lab/openpose.git
    ```
-2. IMPORTANT: I do not update this repository very frequently and the maintainers of OpenPose tend to change their API frequently, so I can only guarantee that it will work with certain versions of OpenPose. Currently I have updated this ros wrapper to work with commit d78ae77. You can use get that version by running the following commands:
+2. IMPORTANT: OpenPose tend to change their API frequently, so I can only guarantee that it will work with certain versions of OpenPose. Currently I have updated this ros wrapper to work with commit d78ae77. You can use get that version by running the following commands:
    ```bash
    cd openpose
    git checkout d78ae77
@@ -31,12 +31,13 @@ Tested on:
    ```bash
    DEFINE_string(model_folder,             "/path/to/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
    ```
-6. Modify the image_topic parameter in openpose_ros/launch/openpose_ros.launch to the image_topic you want to process.
+6. Modify the image_topic and depth_topic parameter in openpose_ros/launch/openpose_ros.launch to the image_topic you want to process.
    ```bash
    <param name="image_topic"     value="/camera/image_raw" />
+   <param name="depth_topic"     value="/camera/depth/image_raw" />
    ```
 7. Modify the other parameters in openpose_ros/src/openpose_flags.cpp and openpose_ros/launch/openpose_ros.launch to your liking such as enabling face and hands detection.
-8. Run catkin_make from your catkin_workspace directory.
+8. Run `catkin build` from your catkin_workspace directory.
 
 ## Running
 ```bash
