@@ -1,7 +1,6 @@
 # openpose_ros
 
-Example ROS catkin package that utilizes the OpenPose library from https://github.com/CMU-Perceptual-Computing-Lab/openpose.
-for 3D pose estimation
+Example ROS catkin package that utilizes the OpenPose library from https://github.com/CMU-Perceptual-Computing-Lab/openpose for 3D pose estimation.
 
 ## System
 Tested on:
