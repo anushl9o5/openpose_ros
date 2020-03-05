@@ -30,25 +30,25 @@ class Detections(object):
 
 			if (self.humans[ID].body_part[0]):
 				for i, body_part in enumerate(person.body_key_points_with_prob):
-					if body_part > 0.0:
+					if body_part.prob > 0.0:
 						key_pt = Points(body_part, self.K)
 						self.humans[ID].body_keys[i] = key_pt
 
 			if (self.humans[ID].body_part[1]):
 				for i, body_part in enumerate(person.left_hand_key_points_with_prob):
-					if body_part > 0.0:
+					if body_part.prob > 0.0:
 						key_pt = Points(body_part, self.K)
 						self.humans[ID].left_hand_keys[i] = key_pt
 
 			if (self.humans[ID].body_part[2]):
 				for i, body_part in enumerate(person.right_hand_key_points_with_prob):
-					if body_part > 0.0:
+					if body_part.prob > 0.0:
 						key_pt = Points(body_part, self.K)
 						self.humans[ID].right_hand_keys[i] = key_pt
 			
 			if (self.humans[ID].body_part[3]):
 				for i, body_part in enumerate(person.face_key_points_with_prob):
-					if body_part > 0.0:
+					if body_part.prob > 0.0:
 						key_pt = Points(body_part, self.K)
 						self.humans[ID].face_keys[i] = key_pt
 
